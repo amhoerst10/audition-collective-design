@@ -1,0 +1,147 @@
+/* --- Audition Collective Design System --- */
+:root {
+  --glass-bg: rgba(255, 255, 255, 0.03);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --accent-gold: #D4AF37;
+  --text-primary: #FFFFFF;
+  --text-secondary: rgba(255, 255, 255, 0.7);
+  --bg-dark: #000000;
+}
+
+/* Global Reset & Background */
+body, html {
+  background: var(--bg-dark) !important;
+  background-image: none !important;
+  color: var(--text-primary) !important;
+  font-family: 'Inter', -apple-system, sans-serif;
+  margin: 0;
+}
+
+/* Remove gradient overlay */
+body::before {
+  display: none !important;
+}
+
+/* Hide Home title and redundant menu items */
+.home .wp-block-post-title, 
+.home .entry-title, 
+.page-title {
+  display: none !important;
+}
+
+/* Specific cleanup for Home menu item if needed */
+.navigation-item-home, .menu-item-home {
+  display: none !important;
+}
+
+/* Hide unnecessary footer elements and theme credits */
+footer .wp-block-navigation, 
+footer .wp-block-site-title, 
+footer .wp-block-site-info,
+footer .wp-block-group:has(.wp-block-site-info),
+footer .wp-block-columns,
+footer .wp-block-social-links {
+  display: none !important;
+}
+
+/* Ensure footer text is minimal */
+footer {
+  padding: 2rem 0;
+  text-align: center;
+	
+	/* Glossy Gold Heading Gradient */
+	h1, h2, h3, h4, .entry-title {
+		    background: linear-gradient(135deg, #fff 0%, var(--accent-gold) 100%) !important;
+		    -webkit-background-clip: text !important;
+		    -webkit-text-fill-color: transparent !important;
+		    color: var(--accent-gold) !important; /* Fallback for older browsers */
+		    font-weight: 800 !important;
+		    letter-spacing: -0.02em;
+	}
+	}
+  border-top: 1px solid var(--glass-border);
+}
+
+/* Additional cleanup for the requested items */
+.footer-internal-links, .footer-blog, .footer-about, .footer-faqs, .footer-authors {
+  display: none !important;
+}
+
+/* Force all sections and blocks to have a black background */
+.wp-block-group, 
+.wp-block-columns, 
+.wp-block-column, 
+.has-background,
+.wp-site-blocks,
+main,
+article,
+section {
+  background-color: #000000 !important;
+  background-image: none !important;
+}
+
+/* Ensure text remains white/gold on black */
+.has-text-color {
+  /* Keep gold text gold, but make everything else white if needed */
+}
+
+/* Hide any remaining theme credits or unwanted footer items */
+.wp-block-site-info, 
+.powered-by, 
+.footer-credits,
+footer .wp-block-navigation {
+  display: none !important;
+}
+
+/* Global Blackout */
+* {
+  box-shadow: none !important;
+  text-shadow: none !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+body, .wp-site-blocks, .wp-block-group, .wp-block-columns, .wp-block-column, section, main, article, header, footer {
+  background-color: #000000 !important;
+  background-image: none !important;
+}
+
+/* Hide all theme-specific footer branding and links */
+.wp-block-site-info, 
+.powered-by, 
+.footer-credits, 
+.wp-block-navigation,
+
+/* Updated Glossy Gold Heading Gradient to include display styles */
+h1, h2, h3, h4, .entry-title, .is-style-text-display, .is-style-text-display--2 {
+	    background: linear-gradient(135deg, #fff 0%, var(--accent-gold) 100%) !important;
+	    -webkit-background-clip: text !important;
+	    -webkit-text-fill-color: transparent !important;
+	    color: var(--accent-gold) !important;
+	    font-weight: 800 !important;
+	    letter-spacing: -0.02em;
+}
+}
+.wp-block-social-links,
+footer a[href*="wordpress.org"],
+footer .wp-block-columns,
+footer .wp-block-group {
+  display: none !important;
+}
+
+/* Show only the copyright if it exists as a paragraph */
+footer p:not(:contains("©")) {
+  /* display: none !important; */ /* Be careful here, let's just hide everything and manually add back if needed */
+}
+
+/* Specific hide for the elements mentioned by the user */
+.footer-blog, .footer-about, .footer-faqs, .footer-authors {
+  display: none !important;
+}
+
+/* Hide Home title and Home menu item */
+.home .wp-block-post-title, .home .entry-title, .menu-item-home, .navigation-item-home {
+  display: none !important;
+}
+
+
+

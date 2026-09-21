@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Audition Collective — Wireframe Mockup v2 (Live-Site Match)</title>
+<style>
+  :root{
+    --bg:#000000;
+    --panel:#121212;
+    --panel-line:#2a2a2a;
+    --gold:#d4af37;
+    --gold-dim:#a68a2e;
+    --text:#ffffff;
+    --muted:#9aa0a6;
+    --open:#3f6b3f;
+    --open-bg:#12271a;
+    --closing-month:#916a1c;
+    --closing-month-bg:#2a2011;
+    --closing-week:#a13a3a;
+    --closing-week-bg:#2a1414;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);}
+  .notice{background:#1a1a1a;color:#fff;font-size:12px;text-align:center;padding:6px 10px;letter-spacing:.03em;border-bottom:1px solid var(--panel-line);}
+
+  header.site{background:#000;border-bottom:1px solid #1a1a1a;}
+  .topbar{display:flex;align-items:center;justify-content:space-between;max-width:1180px;margin:0 auto;padding:18px 24px;}
+  .brand{font-size:18px;font-weight:700;color:#fff;}
+  .hamburger{width:34px;height:26px;position:relative;cursor:pointer;}
+  .hamburger span{position:absolute;left:0;right:0;height:2px;background:var(--gold);}
+  .hamburger span:nth-child(1){top:0;}
+  .hamburger span:nth-child(2){top:11px;}
+  .hamburger span:nth-child(3){top:22px;}
+
+  .annot{background:#1a1608;border:1px dashed var(--gold-dim);color:#e8c96b;font-size:11px;padding:8px 12px;margin:14px 24px;border-radius:3px;max-width:1132px;margin-left:auto;margin-right:auto;}
+
+  .offcanvas-demo{max-width:1180px;margin:0 auto 0;padding:0 24px;}
+  .offcanvas-demo .menu-preview{border:1px solid var(--panel-line);border-radius:4px;padding:16px;background:var(--panel);max-width:320px;}
+  .offcanvas-demo .menu-preview h4{margin:0 0 10px;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);}
+  .offcanvas-demo ul{list-style:none;margin:0;padding:0;}
+  .offcanvas-demo li{border-top:1px solid var(--panel-line);}
+  .offcanvas-demo li:first-child{border-top:none;}
+  .offcanvas-demo a{display:block;padding:10px 4px;color:#fff;text-decoration:none;font-size:14px;}
+  .offcanvas-demo a.new-item{color:var(--gold);font-weight:700;}
+  .offcanvas-demo .tag-new{background:var(--gold);color:#000;font-size:9px;padding:2px 6px;border-radius:8px;margin-left:8px;text-transform:uppercase;letter-spacing:.04em;}
+
+  .hero{padding:56px 24px 48px;text-align:center;position:relative;background:radial-gradient(ellipse at 50% 0%, #241d0c 0%, #000 70%);}
+  .hero h1{font-size:34px;margin:0 0 14px;font-weight:800;line-height:1.25;}
+  .hero h1 .accent{color:var(--gold);}
+  .hero p.sub{color:#c9c9c9;max-width:640px;margin:0 auto 26px;font-size:15px;line-height:1.6;}
+  .hero .free-badge{display:inline-block;background:transparent;border:1px solid var(--gold);color:var(--gold);font-size:11px;text-transform:uppercase;letter-spacing:.08em;padding:6px 14px;border-radius:20px;margin-bottom:20px;}
+  .hero-stats{display:flex;justify-content:center;gap:48px;margin-top:8px;}
+  .hero-stats div{text-align:center;}
+  .hero-stats .num{font-size:26px;color:var(--gold);font-weight:800;}
+  .hero-stats .label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);}
+
+  main{max-width:1180px;margin:0 auto;padding:36px 24px 80px;}
+
+  .panel{background:var(--panel);border:1px solid var(--panel-line);border-radius:6px;}
+
+  .filters{padding:22px 24px;margin-bottom:26px;}
+  .filters h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:0 0 16px;display:flex;align-items:center;gap:8px;}
+  .filters h2::before{content:"";width:16px;height:2px;background:var(--gold);display:inline-block;}
+  .filter-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;}
+  .filter-grid label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:6px;}
+  .filter-grid select,.filter-grid input{width:100%;padding:9px 10px;border:1px solid var(--panel-line);border-radius:3px;font-size:13px;background:#1a1a1a;color:var(--text);font-family:inherit;}
+  .filter-actions{display:flex;justify-content:space-between;align-items:center;margin-top:18px;}
+  .filter-actions .chips{display:flex;gap:8px;flex-wrap:wrap;}
+  .chip{background:#1a1a1a;border:1px solid var(--panel-line);border-radius:14px;padding:5px 12px;font-size:11px;color:#ddd;display:flex;align-items:center;gap:6px;}
+  .chip button{border:none;background:none;color:var(--muted);cursor:pointer;font-size:12px;}
+  .btn-search{background:var(--gold);color:#000;border:none;padding:10px 22px;border-radius:3px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;}
+
+  .results-bar{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--muted);margin-bottom:10px;padding:0 4px;}
+  .results-bar .sort select{font-size:12px;border:1px solid var(--panel-line);border-radius:3px;padding:5px 8px;background:#1a1a1a;color:#fff;}
+
+  table.results{width:100%;border-collapse:collapse;font-size:13px;}
+  table.results thead th{text-align:left;background:#1a1a1a;color:#eee;padding:12px 14px;font-size:11px;text-transform:uppercase;letter-spacing:.05em;font-weight:700;border-bottom:1px solid var(--panel-line);}
+  table.results thead th.sortable::after{content:" \2195";color:var(--muted);font-size:10px;}
+  table.results tbody td{padding:13px 14px;border-bottom:1px solid var(--panel-line);vertical-align:top;color:#ddd;}
+  table.results tbody tr:hover{background:#1a1a1a;}
+  .pos{font-weight:700;color:#fff;font-size:14px;}
+  .orch{color:var(--muted);font-size:12px;}
+  .badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;text-transform:uppercase;letter-spacing:.04em;font-weight:700;}
+  .badge.closing-week{background:var(--closing-week-bg);color:#e07a7a;}
+  .badge.closing-month{background:var(--closing-month-bg);color:#e0b45c;}
+  .badge.open{background:var(--open-bg);color:#7fbf7f;}
+  a.detail{color:var(--gold);text-decoration:underline;font-size:12px;}
+
+  .free-note{margin-top:22px;padding:18px 24px;background:#0d1a10;border:1px solid #2a4a30;border-radius:6px;font-size:13px;color:#bcd9c0;}
+  .free-note strong{color:#fff;display:block;margin-bottom:4px;font-size:14px;}
+
+  .pagination{display:flex;justify-content:center;gap:6px;margin-top:24px;font-size:12px;}
+  .pagination a{padding:7px 12px;border:1px solid var(--panel-line);border-radius:3px;color:#ddd;text-decoration:none;background:var(--panel);}
+  .pagination a.active{background:var(--gold);color:#000;border-color:var(--gold);font-weight:700;}
+
+  footer.site{background:#000;color:var(--muted);font-size:12px;padding:34px 24px;margin-top:40px;border-top:1px solid #1a1a1a;text-align:center;}
+</style>
+</head>
+<body>
+
+<div class="notice">WIREFRAME MOCKUP v2 — matched to live auditioncollective.com (black / gold / Inter, Twenty Twenty-Five off-canvas nav). Not connected to live site or database.</div>
+
+<header class="site">
+  <div class="topbar">
+    <div class="brand">AuditionCollective</div>
+    <div class="hamburger"><span></span><span></span><span></span></div>
+  </div>
+</header>
+
+<div class="annot">Live-site note: the header on auditioncollective.com is a single black bar with logo-text-only left, and a hamburger icon on the right that opens a full-screen off-canvas menu (default Twenty Twenty-Five pattern) — there is no visible flat top nav bar. Below is that menu, as it exists today, with the new item added.</div>
+
+<div class="offcanvas-demo">
+  <div class="menu-preview">
+    <h4>Off-canvas menu (current + new item)</h4>
+    <ul>
+      <li><a href="#" class="new-item">Audition Board <span class="tag-new">New</span></a></li>
+      <li><a href="#">Log In</a></li>
+      <li><a href="#">Membership Account</a></li>
+      <li><a href="#">Membership Levels</a></li>
+      <li><a href="#">Orchestra Directory</a></li>
+    </ul>
+  </div>
+</div>
+
+<section class="hero">
+  <div class="free-badge">Free &amp; open to all visitors — no login required</div>
+  <h1>Live Orchestra &amp; Opera <span class="accent">Auditions</span>, Tracked Daily</h1>
+  <p class="sub">A continuously updated national board of full-time, per-service, and per-diem openings — verified against orchestra sources so you always see current deadlines, not stale listings.</p>
+  <div class="hero-stats">
+    <div><div class="num">412</div><div class="label">Orchestras Tracked</div></div>
+    <div><div class="num">96</div><div class="label">Open Auditions</div></div>
+    <div><div class="num">18</div><div class="label">Closing This Week</div></div>
+  </div>
+</section>
+
+<main>
+
+  <div class="panel filters">
+    <h2>Filter Auditions</h2>
+    <div class="filter-grid">
+      <div>
+        <label for="f-state">State</label>
+        <select id="f-state">
+          <option>All States</option>
+          <option>California</option>
+          <option>Colorado</option>
+          <option>Florida</option>
+          <option>New York</option>
+          <option>Texas</option>
+        </select>
+      </div>
+      <div>
+        <label for="f-instrument">Instrumentation</label>
+        <select id="f-instrument">
+          <option>All Instruments</option>
+          <option>Violin</option>
+          <option>Viola</option>
+          <option>Cello</option>
+          <option>Bass</option>
+          <option>Oboe</option>
+          <option>Horn</option>
+          <option>Trumpet</option>
+          <option>Percussion</option>
+          <option>Voice</option>
+        </select>
+      </div>
+      <div>
+        <label for="f-rank">Position / Rank</label>
+        <select id="f-rank">
+          <option>All Ranks</option>
+          <option>Principal</option>
+          <option>Associate Principal</option>
+          <option>Assistant Principal</option>
+          <option>Section</option>
+          <option>Extra / Per-Service</option>
+        </select>
+      </div>
+      <div>
+        <label for="f-deadline">Deadline Proximity</label>
+        <select id="f-deadline">
+          <option>Any Time</option>
+          <option>Closing This Week</option>
+          <option>Closing This Month</option>
+          <option>Rolling / No Deadline</option>
+        </select>
+      </div>
+    </div>
+    <div class="filter-actions">
+      <div class="chips">
+        <span class="chip">State: California <button>&times;</button></span>
+        <span class="chip">Deadline: This Month <button>&times;</button></span>
+      </div>
+      <button class="btn-search">Search Auditions</button>
+    </div>
+  </div>
+
+  <div class="results-bar">
+    <div>Showing 1–12 of 96 open auditions — visible to every visitor, member or not</div>
+    <div class="sort">Sort by
+      <select>
+        <option>Deadline (soonest first)</option>
+        <option>Orchestra Name (A–Z)</option>
+        <option>State</option>
+        <option>Recently Added</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="panel">
+    <table class="results">
+      <thead>
+        <tr>
+          <th class="sortable">Position</th>
+          <th>Instrument</th>
+          <th>Orchestra</th>
+          <th>State</th>
+          <th class="sortable">App. Deadline</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="pos">Principal Oboe</span></td>
+          <td>Oboe</td>
+          <td class="orch">Alabama Symphony</td>
+          <td>AL</td>
+          <td>09/12/2026</td>
+          <td><span class="badge closing-week">Closing This Week</span></td>
+          <td><a class="detail" href="#">View &rarr;</a></td>
+        </tr>
+        <tr>
+          <td><span class="pos">Section Violin</span></td>
+          <td>Violin</td>
+          <td class="orch">Colorado Symphony</td>
+          <td>CO</td>
+          <td>09/30/2026</td>
+          <td><span class="badge closing-month">Closing This Month</span></td>
+          <td><a class="detail" href="#">View &rarr;</a></td>
+        </tr>
+        <tr>
+          <td><span class="pos">Associate Principal Bass</span></td>
+          <td>Bass</td>
+          <td class="orch">Sarasota Orchestra</td>
+          <td>FL</td>
+          <td>10/21/2026</td>
+          <td><span class="badge open">Open</span></td>
+          <td><a class="detail" href="#">View &rarr;</a></td>
+        </tr>
+        <tr>
+          <td><span class="pos">Principal Percussion</span></td>
+          <td>Percussion</td>
+          <td class="orch">San Antonio Phil.</td>
+          <td>TX</td>
+          <td>Rolling</td>
+          <td><span class="badge open">Open</span></td>
+          <td><a class="detail" href="#">View &rarr;</a></td>
+        </tr>
+        <tr>
+          <td><span class="pos">Section Cello (Video / Audio Submission)</span></td>
+          <td>Cello</td>
+          <td class="orch">New Haven Symphony</td>
+          <td>CT</td>
+          <td>—</td>
+          <td><span class="badge open">Open</span></td>
+          <td><a class="detail" href="#">View &rarr;</a></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="free-note">
+    <strong>Fully open, free tier — nothing shown here is gated.</strong>
+    Every field (position, instrument, orchestra, state, deadline, status) is visible to all visitors, no account or login required. Paid-tier concepts (email alerts, saved searches, contact/salary unlocks) are intentionally out of scope for this pass — do not design gating UI for them yet.
+  </div>
+
+  <div class="pagination">
+    <a href="#">&larr; Prev</a>
+    <a href="#" class="active">1</a>
+    <a href="#">2</a>
+    <a href="#">3</a>
+    <a href="#">…</a>
+    <a href="#">8</a>
+    <a href="#">Next &rarr;</a>
+  </div>
+
+</main>
+
+<footer class="site">
+  &copy; 2026 Audition Collective
+</footer>
+
+</body>
+</html>
