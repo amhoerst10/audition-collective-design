@@ -117,9 +117,15 @@ Strip (case-insensitive) any line/substring matching:
   show, each defaulting to whichever concert is next; as the calendar
   advances the default selection rotates, and text extraction fragments the
   surrounding labels into short word-soup lines (e.g. "Concert Other,
-  Seating"). Stripped via a heuristic: a line made of only 1-5 words drawn
+  Seating"). Stripped via a heuristic: a line made of 2-5 words drawn
   from a small known form-vocabulary set (concert, seating, preferred,
-  accessible, other, name, desired, location, select, type, group).
+  accessible, other, name, desired, location, select, type, group) --
+  **must require 2+, not 1+**: an earlier version matched a single word
+  alone and wrongly stripped standalone "Name" labels (an extremely common,
+  unrelated form field on other sites), causing a real false-positive
+  regression across dozens of orchestras on 2026-09-22/23. See the
+  "any denylist change requires a full re-baseline" rule below -- that
+  regression is exactly why the rule exists.
 
 **When a flag turns out to be noise during review**: add the specific pattern
 that caused it to this list and to the script's `NOISE_PATTERNS`, mark the
@@ -135,13 +141,30 @@ Once detection is proven reliable on a real batch:
 2. A second scheduled pass (offset by ~1 hour) wakes an investigation agent
    whose job is: read all `url_change_flags` rows where `status='unreviewed'`,
    read each `diff_summary`, and for each one either:
-   - Judge it real → hand off to the existing 3-agent
-     `AUDITION_CAPTURE.md` workflow to actually capture/update the listing,
-     then mark `status='confirmed_real'`
+   - Judge it real → **independently re-fetch and re-read the live page
+     first** (a fresh agent call given only the URL, not the prior diff or
+     summary) before writing anything to `auditions` -- a diff-based read is
+     a hypothesis about what changed, not a verified fact about current
+     reality, and this step has already caught real interpretation errors
+     in production (see below). Only after independent confirmation, hand
+     off to the existing 3-agent `AUDITION_CAPTURE.md` workflow to actually
+     capture/update the listing, then mark `status='confirmed_real'`.
    - Judge it noise → mark `status='noise_dismissed'` and propose an addition
      to the Noise Denylist above for human sign-off
 3. This keeps AI investigation scoped to only the handful of flagged sites per
    day, not all ~400 -- the deterministic diff step does the expensive part.
+
+**Why the independent re-check step is mandatory, not optional** (confirmed
+2026-09-23): a diff-based read correctly flagged Erie Philharmonic and
+Nashville Civic Orchestra as changed, but the initial interpretation
+undersold both -- Erie's page had actually rotated to 3 completely different
+positions with zero overlap with the prior DB state (not just "some fields
+changed"), and Nashville's entire principal/section-leader audition track
+had closed in favor of unpaid rolling section auditions (a categorically
+different situation, not a minor update). A second, independent agent given
+only the URLs -- no prior diff or analysis -- caught both correctly. This is
+now the standing rule for every `confirmed_real` flag headed toward a
+database write.
 
 ## Edge Cases
 - Orchestra with a placeholder row (no live auditions) whose page later posts
