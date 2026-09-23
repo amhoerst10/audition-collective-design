@@ -72,12 +72,17 @@ NOISE_PATTERNS = [
     # Concert" dropdown per upcoming show, defaulting to whichever concert is
     # next -- as the calendar advances the default rotates, and
     # BeautifulSoup's text extraction fragments the surrounding labels into
-    # short word-soup lines like "Concert Other, Seating"). A line made up
-    # entirely of 1-5 of these known form-vocabulary words is essentially
-    # never real audition content on its own.
+    # short word-soup lines like "Concert Other, Seating"). Requires AT LEAST
+    # 2 of these vocabulary words together -- an earlier version matched a
+    # single word alone (e.g. just "Name") and caused a real production
+    # regression: "Name" is an extremely common standalone contact/newsletter
+    # form label on totally unrelated sites, and stripping it out (while the
+    # pre-fix baseline still had it) created a wave of false "content
+    # changed" flags across dozens of orchestras on 2026-09-22/23. Confirmed
+    # fix requires 2+ words so a single common label is never touched.
     re.compile(
         r'^\s*(concert|seating|preferred|accessible|other|name|desired|location|select|type|group)'
-        r'([\s,]+(and|or)?[\s,]*(concert|seating|preferred|accessible|other|name|desired|location|select|type|group)){0,4}'
+        r'([\s,]+(and/or|and|or)?[\s,]*(concert|seating|preferred|accessible|other|name|desired|location|select|type|group)){1,4}'
         r'[\s,]*$',
         re.IGNORECASE
     ),

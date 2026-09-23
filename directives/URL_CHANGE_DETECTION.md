@@ -56,6 +56,33 @@ list isn't perfect yet.
   the snapshot or create a flag -- same "needs live-browser check, not proof
   of anything" caution as `check_orchestra_urls.py`.
 
+## Operational rule: any denylist change requires a FULL re-baseline
+
+**Confirmed the hard way, 2026-09-22/23**: a new noise pattern added during a
+flag-review session (the accessibility-form vocabulary heuristic below) was
+too broad -- it matched a single common word alone (e.g. a standalone "Name"
+line, an extremely common generic form-field label on totally unrelated
+sites) instead of requiring the intended multi-word combination. Because
+only the 2 specifically-affected orchestras' snapshots were cleared after
+deploying that fix -- not all ~400 -- every other orchestra's stored baseline
+still contained "Name" from *before* the new pattern existed. The next run
+stripped "Name" from the freshly-fetched text (correctly, per the new
+pattern) but compared it against an old baseline that still had it,
+producing a false "content changed" diff on every site with a plain "Name"
+label anywhere on the page. Result: ~40-60 false-positive flags across
+unrelated orchestras over two nights, discovered only because the user asked
+for a status check-in, not because anything alerted on its own.
+
+**Rule going forward: whenever `NOISE_PATTERNS` or `clean_text_from_html()`
+changes in any way, `TRUNCATE url_change_snapshots` and do a full re-baseline
+run before the next scheduled cron fire.** A partial re-baseline of only the
+"obviously affected" orchestras is not sufficient -- a noise-pattern change
+can affect any orchestra whose page happens to contain matching text,
+which isn't knowable in advance. Also: prefer regex patterns that require
+multiple specific words/tokens together over single common words, even ones
+that seem safe in isolation -- "Name" alone is common; "Concert Other,
+Seating" together is not.
+
 ## Noise Denylist (living list -- update this as false positives appear)
 Strip (case-insensitive) any line/substring matching:
 - `©` or `Copyright` followed by a 4-digit year
