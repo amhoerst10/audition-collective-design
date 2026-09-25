@@ -51,7 +51,9 @@ Both run via Hostinger's native Cron Jobs feature (hPanel -> Advanced -> Cron Jo
 | Job | Schedule | Command |
 |---|---|---|
 | Expiry purge backstop | `0 0 * * *` | `/usr/bin/php /home/<user>/domains/<domain>/public_html/wp-cron.php` |
-| URL change detection | `0 2 * * *` | `/usr/bin/python3 /home/<user>/detect_url_changes.py >> /home/<user>/url_change_full_run.log 2>&1` |
+| URL change detection (legacy, retiring) | `0 2 * * *` | `/usr/bin/python3 /home/<user>/detect_url_changes.py >> /home/<user>/url_change_full_run.log 2>&1` |
+
+**The current URL change detector runs on a separate VPS, not the shared hosting.** It needs a real headless browser (Crawl4AI), which the shared server can't run. Full setup: [`vps/README.md`](vps/README.md). Its cron entry lives in the VPS's root crontab (`0 7 * * *`), not hPanel. The legacy hPanel job above stays only until the VPS detector has proven itself; then delete it.
 
 The expiry-purge logic itself is a WP-Cron scheduled event (`ac_daily_expiry_purge`) registered by `automated-expiry-purge.php`; the hPanel job just guarantees WP-Cron actually fires daily even with zero site visitors.
 

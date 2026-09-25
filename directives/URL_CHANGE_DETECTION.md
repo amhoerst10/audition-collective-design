@@ -30,12 +30,146 @@ list isn't perfect yet.
   - `orchestra_id`, `clean_text` (LONGTEXT -- full cleaned text from the last
     check), `content_hash` (sha256 of clean_text, cheap equality check),
     `last_checked_at`, `last_changed_at`
-- `url_change_flags` table (one row per detected change):
-  - `orchestra_id`, `detected_at`, `diff_summary` (unified diff of
-    added/removed lines), `status` (`unreviewed` / `confirmed_real` /
-    `noise_dismissed`), `reviewed_at`, `reviewer_notes`
+- `url_change_snapshots_c4a` table: same idea, used only by the Crawl4AI
+  detector, plus `final_url` (where the page actually landed after redirects)
+  and `last_status`. Kept separate on purpose -- the two detectors clean
+  pages differently, so comparing one's snapshot against the other's would
+  flag every site as changed.
+- `url_change_flags` table (one row per detected change or failure):
+  - `orchestra_id`, `detected_at`, `diff_summary` (unified diff, or the
+    failure detail for manual-check flags), `status`, `reviewed_at`,
+    `reviewer_notes`
+  - `status`: `unreviewed` / `confirmed_real` / `noise_dismissed` for content
+    changes; `needs_manual_check` / `manual_check_done` for crawl failures
+  - `detector`: `bs4` (legacy) or `c4a` (Crawl4AI)
+  - `failure_reason`: `blocked` / `dead_link` / `moved` / `unreachable`
+    (manual-check flags only)
+  - `suggested_url`: for `moved` flags, where the old URL redirects to
 
-## Tool
+## Tool (current): Crawl4AI detector on the VPS
+
+`execution/detect_url_changes_c4a.py`, run nightly on the Hostinger KVM 2 VPS
+(`srv997890.hstgr.cloud`, 72.60.123.209) inside the `ac-crawler` Docker image
+(the official `unclecode/crawl4ai` image plus the MySQL connector). Cron:
+`/opt/audition-collective/run_detector.sh` at 07:00 UTC. Logs:
+`/opt/audition-collective/logs/detector-YYYY-MM-DD.log`, kept 30 days.
+
+**Why it replaced the BeautifulSoup detector** (evaluation, 2026-09-24): the
+old detector used plain HTTP requests and could not read 87 of 408 orchestra
+pages. Crawl4AI drives a real headless browser and read 70 of those 87:
+56 of 67 bot-blocked (403/406) sites, 12 of 17 "404" sites (7 of them had
+simply moved and the browser followed the redirect), and both SSL/timeout
+failures. It reproduced 6 of 6 hand-verified orchestras exactly (every fact
+checked against a separate independent read). About 6 seconds per page, so a
+full 408-page run takes roughly 11 minutes at 4 pages in parallel.
+
+**Every orchestra lands in exactly one bucket per run:**
+| Crawl result | Action |
+|---|---|
+| Read OK, unchanged | Nothing |
+| Read OK, changed in only one of two reads | Nothing (counted as `flaky`) |
+| Read OK, changed in both reads | Flag `unreviewed` with a diff of the stable changes -> independent live re-check before any DB write (see rule below) |
+| Blocked (Cloudflare, 401/403/406/429, or a bot-challenge page) | Flag `needs_manual_check`, reason `blocked` |
+| Page gone (404/410, or loads with under 200 characters of content) | Flag `needs_manual_check`, reason `dead_link` -> find the orchestra's new audition page |
+| Redirected within the same site | Flag `needs_manual_check`, reason `moved_same_site`, with `suggested_url` (low priority); content still diffed |
+| Redirected to a different domain | Flag `needs_manual_check`, reason `moved_offsite`, with `suggested_url` (check soon -- can mean a hijacked or expired domain); content still diffed |
+| Unreachable after one retry, or hung past 120 s | Flag `needs_manual_check`, reason `unreachable` |
+
+**A crawl failure is a trigger, not a silent skip.** Blocked or dead pages
+are exactly where a listing can go stale unnoticed, so each one goes to a
+manual-check queue for a person or an agent. Because Crawl4AI reads most
+sites, that queue should stay small (roughly 15-20 orchestras, versus 87 the
+old detector couldn't read at all).
+
+**De-duplication**: no new manual-check flag if the same orchestra and reason
+already has an open one, or had one in the last 7 days. Without this the
+~11 permanently Cloudflare-blocked sites would re-queue every night; with it
+they effectively come up for a manual check about once a week.
+
+**Known hard limit -- 11 Cloudflare-protected sites**: Minnesota Orchestra,
+National Symphony, Lyric Opera of Chicago, Grant Park Music Festival,
+Vermont Symphony, Orlando Symphony, Savannah Philharmonic, Akron Symphony,
+Auburn Symphony, Springfield (MO) Symphony, Monterey Symphony. These block the
+VPS's data-center IP address outright; Crawl4AI's stealth and "undetected
+browser" modes both failed. The only automated fix is a paid
+residential-proxy service, not worth it for 11 sites. They stay on the weekly
+manual-check cycle.
+
+**Cleaning differences from the legacy detector**: Crawl4AI returns markdown,
+so the cleaner strips image tags and link targets (link URLs often carry
+rotating tracking parameters), then applies the same noise denylist and
+honeypot rule, plus widget/countdown patterns found in the Crawl4AI noise
+test (cart and account widgets, "skip to main content", cookie banners,
+accessibility toolbars, countdown timers). Only `<nav>`, `<footer>`,
+`<script>`, `<style>`, `<noscript>` and `<svg>` are excluded.
+
+**Do NOT exclude `<form>` or `<header>`** (learned on the first full run,
+2026-09-24): some sites wrap the entire page in a `<form>` (Seattle Opera
+kept 1 character of 5,825; Grand Rapids 167 of 2,651), and some WordPress
+themes put page content inside `<header>` (Berkeley, Toledo, Dallas Winds).
+Excluding them turned 35 working pages into false "dead link" flags.
+
+**Confirm-before-flag**: when a page's cleaned text differs from its
+snapshot, the detector immediately reads the page a second time and keeps
+only the lines that changed in BOTH reads. Widgets that render on one load
+and not the next (menus, carts, chat boxes) drop out; real listing changes
+survive. A change that doesn't survive the second read is counted as
+`flaky` and nothing is flagged.
+
+**Challenge-page detection**: some bot protections return a normal-looking
+status code with a "please wait" page (Virginia Symphony returns HTTP 202
+with "Checking the site connection security... requires cookies"). Pages
+under 3,000 characters matching known challenge wording are classified
+`blocked`, not `dead_link`. **Correction to the evaluation numbers above**:
+the evaluation counted any page over 300 characters as a success, and about a
+dozen of these ~305-character challenge pages slipped through as
+"successes." Real blocked coverage is lower than 56 of 67; see the
+production run results for the corrected figure.
+
+**Hard per-site timeout (120 s)**: on the first full run Phoenix Symphony's
+page hung the browser for over 2 hours (Crawl4AI's own `page_timeout` didn't
+stop it), which blocked the whole run from finishing. Each orchestra is now
+capped at 120 seconds, a hung site goes to the manual queue as
+`unreachable`, and `run_detector.sh` also kills any run that passes 60
+minutes.
+
+**MySQL connection cap -- use ONE connection per run** (learned 2026-09-24):
+the Hostinger MySQL user `u715111901_Admin` is limited to **500 new
+connections per hour for remote connections** (error 1226,
+`max_connections_per_hour`). A version of the detector that opened a fresh
+connection for every read/write used 2-3 per orchestra, hit the cap
+mid-run, and lost ~135 orchestras' results. The cap is counted per
+user@host: WordPress itself connects via `localhost`, which has its own
+budget, so the live site was unaffected. But every remote client shares
+the remote budget -- the VPS detector AND any ad-hoc queries from a
+contributor's laptop. Rules: the detector reuses one connection and
+reconnects only if it drops; avoid bursts of ad-hoc laptop queries around
+the 07:00 UTC run; if you see error 1226, stop making remote queries and
+wait up to an hour for the window to clear.
+
+**`moved` is split**: `moved_same_site` (the orchestra reorganized its own
+site -- low priority, one-time URL housekeeping) vs `moved_offsite` (the URL
+now lands on a different domain -- check soon). The first run found about 50
+genuine redirects, mostly same-site reorganizations. One `moved_offsite` was
+a real problem: Arkansas Philharmonic's youth-audition URL
+(`arphil.org/apyoauditions/`) now redirects to an unrelated Indonesian
+gambling site, a sign of an expired or hijacked page. Per the project
+owner's instruction, stored URLs are NOT auto-updated from redirects; each
+is confirmed by hand first.
+
+**Parallel run and cutover**: the legacy detector (below) keeps running on the
+shared hosting server until the Crawl4AI detector has run cleanly for a
+couple of nights. Flags from each are distinguishable by the `detector`
+column. At cutover, delete the legacy hPanel cron job; `url_change_snapshots`
+can then be dropped.
+
+**Structured AI extraction (deferred)**: Crawl4AI can also hand each page to
+an AI model to return the audition listings as structured data, which would
+eliminate text-diff noise at the root. Deliberately not adopted yet: the
+clean markdown alone already reproduced every hand-verified fact, and it adds
+a per-page API cost. Revisit only if the text-diff approach proves inaccurate.
+
+## Legacy tool: BeautifulSoup detector (running in parallel until cutover)
 `execution/detect_url_changes.py`
 - Fetches each orchestra's `url` (same polite GET + User-Agent header pattern
   as `check_orchestra_urls.py` -- reuse that pattern, don't reinvent it)
@@ -126,6 +260,35 @@ Strip (case-insensitive) any line/substring matching:
   regression across dozens of orchestras on 2026-09-22/23. See the
   "any denylist change requires a full re-baseline" rule below -- that
   regression is exactly why the rule exists.
+
+- **Crawl4AI-only noise** (found in two noise tests, 2026-09-24/25 -- runs
+  minutes or hours apart where nothing real could have changed). These
+  apply only to `detect_url_changes_c4a.py`, because a real browser renders
+  widgets that plain HTTP fetches never saw:
+  - Accessibility overlays whose wording depends on the browser's apparent
+    OS ("Press Option+1 for screen-reader mode" vs "Alt+1"; "Accessibility
+    Preferences (⌘ + Shift + A)") -- Marin, Opera Colorado, Fort Wayne,
+    Omaha, Hawai'i
+  - Cookie-consent banners with ticking counts ("We and our 1738 partners",
+    "Number of Vendors seeking consent: 847") -- Atlanta Symphony
+  - Countdown timers ("23d 15:59:15", "18 hours", lone digits). Markdown
+    bold (`18** hours`) defeated the first countdown rule, so emphasis
+    markers are now stripped before matching -- San Bernardino, Kamuela
+  - Newsletter sign-up boxes that load on some reads and not others
+    ("Subscribe", "Type your email", "Join our mailing list") -- Boston
+    Symphony, Chautauqua
+  - Cart/account/chat widgets, "Skip to main content" links, cookie banners
+  - Concert-picker dropdown options ("Mendelssohn Violin Concerto | WED, SEP
+    23 at 7:30PM") -- NC Symphony's accommodation form, visible now that
+    forms aren't excluded
+  - Content of a page that has moved to a *different domain* is not diffed
+    at all (Arkansas Phil's hijacked URL serves a gambling site with live
+    numbers); the `moved_offsite` flag is the signal.
+
+  Before adopting any new pattern, dry-run it against every stored snapshot
+  and list the lines it would remove -- confirm none are real audition text
+  (done for this batch: nothing audition-related was removed apart from the
+  intended concert-picker options).
 
 **When a flag turns out to be noise during review**: add the specific pattern
 that caused it to this list and to the script's `NOISE_PATTERNS`, mark the

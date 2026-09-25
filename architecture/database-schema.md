@@ -97,6 +97,37 @@ CREATE TABLE `url_change_flags` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ```
 
+### Crawl4AI detector additions (2026-09-24)
+
+`url_change_flags` gained three columns and two statuses:
+
+```sql
+ALTER TABLE url_change_flags MODIFY status
+  ENUM('unreviewed','confirmed_real','noise_dismissed','needs_manual_check','manual_check_done')
+  NOT NULL DEFAULT 'unreviewed';
+ALTER TABLE url_change_flags ADD COLUMN detector VARCHAR(10) NOT NULL DEFAULT 'bs4';  -- 'bs4' legacy, 'c4a' Crawl4AI
+ALTER TABLE url_change_flags ADD COLUMN failure_reason VARCHAR(40) NULL;  -- blocked | dead_link | moved_same_site | moved_offsite | unreachable
+ALTER TABLE url_change_flags ADD COLUMN suggested_url VARCHAR(500) NULL;  -- redirect target, for moved_* flags
+```
+
+The Crawl4AI detector keeps its own snapshots, because it cleans pages differently from the legacy detector and comparing across the two would flag everything:
+
+```sql
+CREATE TABLE url_change_snapshots_c4a (
+  orchestra_id INT NOT NULL PRIMARY KEY,
+  clean_text LONGTEXT, content_hash CHAR(64),
+  final_url VARCHAR(500), last_status INT,
+  last_checked_at DATETIME, last_changed_at DATETIME,
+  FOREIGN KEY (orchestra_id) REFERENCES orchestras(id) ON DELETE CASCADE
+) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+```
+
+Once the legacy detector is retired, `url_change_snapshots` can be dropped.
+
+## Connection limits
+
+Hostinger caps the MySQL user at **500 new connections per hour, counted per user@host**. WordPress connects via `localhost` (its own budget); every *remote* client (the VPS detector, ad-hoc laptop queries) shares the remote budget. Anything that runs remotely must reuse a single connection rather than opening one per query. See `vps/README.md`.
+
 ## Security-critical configuration
 
 The WP Data Access "app" (`app_id=6`, powers the live Audition Board's REST endpoint) MUST have `rest_api.authorization` set to `restricted`, not `anonymous`. This was a real paywall-bypass vulnerability discovered and fixed during this project (2026-09-17) -- with `anonymous` authorization, anyone could query the full audition dataset via `POST /wp-json/wpda/app/select` without logging in or paying, completely bypassing the PMPro membership gate.

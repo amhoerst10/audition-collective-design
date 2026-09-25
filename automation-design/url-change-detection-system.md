@@ -1,5 +1,51 @@
 # URL Change Detection
 
+> **Current detector (from 2026-09-25): Crawl4AI on the VPS.** `execution/detect_url_changes_c4a.py`, nightly at 07:00 UTC via the VPS root crontab. Setup and rebuild: [`../vps/README.md`](../vps/README.md). The BeautifulSoup detector described further down is the *legacy* one; it keeps running on the shared hosting server in parallel until the Crawl4AI detector has proven itself, then gets retired.
+
+## Crawl4AI detector
+
+### Why it replaced the BeautifulSoup detector
+
+The legacy detector uses plain HTTP requests and can't read pages that need a real browser. On the 2026-09-24 baseline it read 321 of 408 orchestras. Crawl4AI drives headless Chromium and reads **352 of 408 (86%)**, about 31 more orchestras, at no cost beyond the VPS (KVM 2, $17.99 per renewal).
+
+**Honest correction:** an initial evaluation reported Crawl4AI reading 70 of the 87 pages the old detector couldn't. That overcounted. The evaluation treated any page over 300 characters as a success, and about a dozen sites were actually returning ~305-character bot-challenge pages ("Checking the site connection security..."). The production figure above is the real one. Accuracy held up: it reproduced all 6 hand-verified orchestras exactly.
+
+### How each orchestra is handled
+
+Every orchestra lands in exactly one bucket per run (full table in `directives/URL_CHANGE_DETECTION.md`):
+- **Read OK** -> diffed against its snapshot. If it looks changed, the page is read a *second* time and only lines that changed in both reads are flagged (`unreviewed`); flicker between reads counts as `flaky` and isn't flagged.
+- **Couldn't read it** -> not a silent skip. It goes to a **manual-check queue** (`status='needs_manual_check'`) with a reason: `blocked`, `dead_link`, `unreachable`, `moved_same_site`, or `moved_offsite` (with `suggested_url`). Queue entries are de-duplicated for 7 days, so a permanently blocked site comes up for a manual check about once a week rather than every night.
+- Stored URLs are **never auto-updated** from redirects; each is confirmed by hand first.
+
+### What the first production runs taught us (all fixed)
+
+1. **Don't strip `<form>` or `<header>`.** Some sites wrap the whole page in a form (Seattle Opera kept 1 character of 5,825); some WordPress themes put content in the header. That turned 35 working pages into false "dead links."
+2. **Bot-challenge pages return normal status codes** (Virginia Symphony: HTTP 202). They're recognized by their wording and classified `blocked`.
+3. **One hung site stalled the whole run for 2+ hours** (Phoenix Symphony). Now there's a 120-second cap per site and a 60-minute cap per run.
+4. **MySQL allows 500 remote connections per hour.** A connection-per-query version hit the cap mid-run and lost ~135 results. The detector now uses one connection per run. The live site wasn't affected (WordPress connects via `localhost`, which is counted separately).
+5. **Real browsers render widgets plain fetches never saw**: accessibility overlays, cookie-consent counts, countdowns, newsletter boxes, chat widgets. Three back-to-back noise tests drove false "changed" flags from 12 to 4 to about 1% of pages; the confirm-before-flag re-read handles most flicker without needing a pattern.
+6. **One URL was hijacked**: Arkansas Philharmonic's youth-audition page now redirects to a gambling site. Content from `moved_offsite` pages is no longer diffed; the flag is the signal.
+
+### Manual-check queue, first baseline (2026-09-25)
+
+| Reason | Count | Nature |
+|---|---|---|
+| `blocked` | ~44 | Recurring (weekly via dedupe). Cloudflare/challenge protection on the VPS's data-center IP |
+| `dead_link` | ~18 | One-time until the orchestra's new page is found |
+| `unreachable` | 2-7 | Mostly transient |
+| `moved_same_site` | 24 | One-time URL housekeeping, low priority |
+| `moved_offsite` | 8 | One-time, check soon (includes the hijacked Arkansas Phil URL) |
+
+The recurring load is the ~44 blocked sites, not the 15-20 first estimated. That's still well below the 87 orchestras the legacy detector couldn't read at all. A possible next step for shrinking it: try Firecrawl (which routes through its own proxy network) on just the blocked sites. At ~44 pages a week that fits inside Firecrawl's free 1,000-credits-per-month tier; it needs a pilot first to see whether it actually gets past these protections.
+
+### Structured AI extraction: deferred
+
+Crawl4AI can hand each page to an AI model to return listings as structured data. Not adopted: the clean markdown already reproduces every hand-verified fact, and it adds per-page API cost. Revisit if the text-diff approach proves inaccurate.
+
+---
+
+## Legacy detector (BeautifulSoup, shared hosting)
+
 **Source**: [`../execution/detect_url_changes.py`](../execution/detect_url_changes.py)
 **Directive**: [`../directives/URL_CHANGE_DETECTION.md`](../directives/URL_CHANGE_DETECTION.md) -- the living spec, including the full noise-denylist history. Read that first; this doc covers deployment/ops, the directive covers the detection logic itself.
 **Runs**: Hostinger hPanel Cron Job, daily at `0 2 * * *`, directly on the server (see `../architecture/README.md` for why server-side, not local)

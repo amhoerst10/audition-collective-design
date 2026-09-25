@@ -1,0 +1,2 @@
+# root crontab on the VPS (crontab -e). 07:00 UTC = 2-3am US Central.
+0 7 * * * /opt/audition-collective/run_detector.sh
