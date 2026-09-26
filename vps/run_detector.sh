@@ -15,8 +15,8 @@ if ! docker image inspect ac-crawler >/dev/null 2>&1; then
   docker rm -f ac-crawler-keep >/dev/null 2>&1
   docker create --name ac-crawler-keep ac-crawler true >/dev/null 2>&1
 fi
-# Whole-run backstop: a normal full run is ~11 min; kill anything past 60.
-timeout 60m docker run --rm --name ac-detector --shm-size=1g --memory=4g \
+# Whole-run backstop: a normal (polite, concurrency 2) run is ~30 min; kill anything past 90.
+timeout 90m docker run --rm --name ac-detector --shm-size=1g --memory=4g \
   --env-file /opt/audition-collective/.env \
   -v /opt/audition-collective/detect_url_changes_c4a.py:/app/detect.py:ro \
   ac-crawler python /app/detect.py "$@" >> "$LOG" 2>&1
@@ -30,6 +30,13 @@ timeout 10m docker run --rm --name ac-integrity \
   --env-file /opt/audition-collective/.env \
   -v /opt/audition-collective/check_data_integrity.py:/app/integrity.py:ro \
   ac-crawler python /app/integrity.py >> "$LOG" 2>&1
-[ $rc -eq 124 ] && echo "$(date -u) KILLED: run exceeded 60 min backstop" >> "$LOG"
+# Job-board cross-check: musicalchairs.info US postings vs our listings.
+# Catches openings on sites that block us and ones we missed elsewhere.
+echo "--- job-board check ---" >> "$LOG"
+timeout 20m docker run --rm --name ac-jobboard --shm-size=1g \
+  --env-file /opt/audition-collective/.env \
+  -v /opt/audition-collective/check_job_boards.py:/app/jobboards.py:ro \
+  ac-crawler python /app/jobboards.py >> "$LOG" 2>&1
+[ $rc -eq 124 ] && echo "$(date -u) KILLED: run exceeded 90 min backstop" >> "$LOG"
 echo "exit $rc" >> "$LOG"
 find logs -name 'detector-*.log' -mtime +30 -delete

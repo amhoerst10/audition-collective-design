@@ -329,6 +329,29 @@ table.ac-board-table a:hover { color: #ffffff; }
     return escapeHtml(value);
   }
 
+  // An undated final audition shows WHY it is blank, taken from the reason
+  // suffix the capture rules require in the position name.
+  function finalAuditionCell(row) {
+    if (row.final_audition) return formatDate(row.final_audition);
+    var pos = String(row.position || "");
+    if (pos === PLACEHOLDER_POSITION) return "—";
+    var postponed = pos.match(/\(Postponed to ([^)]+)\)/i);
+    if (postponed) return "Postponed to " + escapeHtml(postponed[1]);
+    if (/contact to schedule/i.test(pos)) return "Contact to schedule";
+    if (/video|audio submission/i.test(pos)) return "Video submission";
+    if (/rolling|sub list/i.test(pos)) return "Rolling";
+    return "TBD";
+  }
+
+  // Orchestras sometimes announce auditions before applications open (e.g.
+  // Atlanta 2027: "Not yet accepting applications"), so a real listing with
+  // no deadline shows TBD rather than a bare dash.
+  function deadlineCell(row) {
+    if (row.application_deadline) return formatDate(row.application_deadline);
+    if (String(row.position || "") === PLACEHOLDER_POSITION) return "—";
+    return "TBD";
+  }
+
   function uniqueSorted(values) {
     var seen = {};
     var out = [];
@@ -440,9 +463,9 @@ table.ac-board-table a:hover { color: #ffffff; }
         "<td>" + escapeHtml(row.state) + "</td>" +
         "<td>" + escapeHtml(row.position) + "</td>" +
         "<td>" + escapeHtml(row.instrumentation) + "</td>" +
-        "<td>" + formatDate(row.application_deadline) + "</td>" +
+        "<td>" + deadlineCell(row) + "</td>" +
         "<td>" + formatDate(row.preliminary_audition) + "</td>" +
-        "<td>" + formatDate(row.final_audition) + "</td>" +
+        "<td>" + finalAuditionCell(row) + "</td>" +
         "</tr>";
     });
     tbody.innerHTML = html;

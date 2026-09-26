@@ -142,6 +142,18 @@ def main():
             print(f"    - {f}")
         if dry:
             continue
+        # If a reviewer already confirmed this exact set of issues as correct
+        # (e.g. an orchestra that genuinely publishes no deadline), don't
+        # re-queue it every week. It re-queues as soon as the issues change.
+        cur.execute(
+            """SELECT diff_summary FROM url_change_flags WHERE orchestra_id=%s
+               AND failure_reason='data_integrity' AND status='manual_check_done'
+               ORDER BY reviewed_at DESC LIMIT 1""",
+            (oid,),
+        )
+        prior = cur.fetchone()
+        if prior and prior["diff_summary"] == "\n".join(found)[:60000]:
+            continue
         cur.execute(
             """SELECT 1 FROM url_change_flags WHERE orchestra_id=%s AND failure_reason='data_integrity'
                AND (status='needs_manual_check' OR detected_at > NOW() - INTERVAL %s DAY) LIMIT 1""",

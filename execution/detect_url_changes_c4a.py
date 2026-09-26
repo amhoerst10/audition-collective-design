@@ -32,6 +32,7 @@ import asyncio
 import difflib
 import hashlib
 import os
+import random
 import re
 import sys
 import time
@@ -42,7 +43,12 @@ import mysql.connector
 from crawl4ai import AsyncWebCrawler, BrowserConfig, CacheMode, CrawlerRunConfig
 
 DETECTOR = "c4a"
-CONCURRENCY = 4
+# Kept deliberately gentle: after several back-to-back test crawls (2026-09-24/25)
+# Cloudflare challenges on the VPS IP jumped from 9 to ~48, then fell back to
+# 11 once crawling dropped to once a night. Fewer parallel requests, a random
+# pause per site, and a shuffled order each night keep the IP's reputation up.
+CONCURRENCY = 2
+POLITE_DELAY_RANGE = (2.0, 6.0)
 DEDUPE_DAYS = 7
 PER_SITE_TIMEOUT = 120
 
@@ -299,6 +305,7 @@ def write(o, fn, *args):
 
 async def process(crawler, cfg, o, sem, tally):
     async with sem:
+        await asyncio.sleep(random.uniform(*POLITE_DELAY_RANGE))
         # Hard cap per orchestra: page_timeout alone didn't stop Phoenix
         # Symphony's page from hanging the browser for 2+ hours on the first
         # full run (2026-09-24), which blocked the whole job from finishing.
@@ -414,6 +421,7 @@ async def main():
     limit = int(sys.argv[sys.argv.index("--limit") + 1]) if "--limit" in sys.argv else None
     ids = sys.argv[sys.argv.index("--ids") + 1].split(",") if "--ids" in sys.argv else None
     orchestras = load_orchestras(limit, ids)
+    random.shuffle(orchestras)
     started = datetime.now()
     print(f"{started:%Y-%m-%d %H:%M:%S} Crawl4AI detector: {len(orchestras)} orchestras", flush=True)
 

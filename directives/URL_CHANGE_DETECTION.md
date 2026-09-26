@@ -196,6 +196,44 @@ standard: the system, not a human skimming the board, should catch these.
 
 A hit means "look at this," not "this is wrong." Work each through the same
 research -> independent verification -> write process as other queue items.
+When a reviewer confirms a flagged set of issues is actually correct (e.g. an
+orchestra that genuinely publishes no deadline), store that exact issue text
+in the `manual_check_done` flag's `diff_summary`: the check stays quiet for
+that orchestra until its issues change, so the queue doesn't refill weekly
+with known-good cases. First run results (2026-09-26): 13 orchestras had no
+rows; 4 of them had open auditions (Indianapolis 4, San Diego 5, Tucson 2, SF
+Opera 1) that were invisible on the board.
+
+## Nightly job-board cross-check (added 2026-09-26)
+
+`execution/check_job_boards.py` runs after the integrity check. It reads
+musicalchairs.info's ~20 per-instrument job pages (~20 polite requests),
+keeps US postings, drops obvious out-of-scope ones (apprenticeship, academy,
+student, youth, fellowship, military bands, cancelled), fuzzy-matches the
+organization to our `orchestras` table, and queues any posting for an
+instrument we have no listing for (`failure_reason='jobboard_mismatch'`,
+`detector='jobboard'`, posting details + link in `diff_summary`, 7-day
+dedupe). US organizations we don't track are printed to the log as
+discovery leads.
+
+**Why:** ~40 orchestras block the VPS crawler (Cloudflare scores its
+data-center IP), but musicalchairs doesn't block us -- a QA pass had
+already confirmed Lyric Opera of Chicago's opening there when lyricopera.org
+refused every automated request. It also catches openings we missed on
+readable sites. A mismatch is a lead, not a verdict: postings go stale
+(Alabama's past September auditions still show "closing n/a") and our
+scope rules still apply at review. First run queued 6 (Colorado Symphony
+2nd Trumpet, New Haven violins, Met Opera Principal Cello, Johnstown viola,
+Nashville Civic principal bass, Alabama's stale posts).
+
+**Polite crawling (same date):** the main detector now runs 2 pages at a
+time (was 4), pauses a random 2-6 s per site, and shuffles its order each
+night; a full run takes ~30 min (run backstop raised to 90 min). After a
+burst of test crawls, Cloudflare challenges on the VPS IP rose from 9 to ~48
+and fell back to 11 once crawling returned to once a night -- the footprint
+matters. Escalation path if blocking stays high: Firecrawl free tier for
+the blocked set, a weekly real-browser check, then a residential proxy
+(project owner: proxy last).
 
 ## Legacy tool: BeautifulSoup detector (running in parallel until cutover)
 `execution/detect_url_changes.py`
