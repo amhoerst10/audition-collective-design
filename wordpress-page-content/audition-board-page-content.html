@@ -344,10 +344,24 @@ table.ac-board-table a:hover { color: #ffffff; }
     return out;
   }
 
+  // Keyboard-family options always shown so searches stay specific even when
+  // no current listing uses one. A doubling like "Piano and Celeste" is split so
+  // it appears under each named instrument. (The ampersand is built at runtime:
+  // WordPress rewrites a literal one in page content and breaks the script.)
+  var ALWAYS_SHOW_INSTRUMENTS = ["Keyboard", "Piano", "Celeste", "Organ"];
+  var DOUBLING_SEP = " " + String.fromCharCode(38) + " ";
+
+  function instrumentParts(value) {
+    if (!value) return [];
+    return String(value).split(DOUBLING_SEP);
+  }
+
   function populateFilterOptions() {
     var states = uniqueSorted(allRows.map(function (r) { return r.state; }));
     var cities = uniqueSorted(allRows.map(function (r) { return r.city; }));
-    var instrumentations = uniqueSorted(allRows.map(function (r) { return r.instrumentation; }));
+    var partsList = ALWAYS_SHOW_INSTRUMENTS.slice();
+    allRows.forEach(function (r) { partsList = partsList.concat(instrumentParts(r.instrumentation)); });
+    var instrumentations = uniqueSorted(partsList);
 
     states.forEach(function (s) {
       var opt = document.createElement("option");
@@ -378,7 +392,7 @@ table.ac-board-table a:hover { color: #ffffff; }
     filteredRows = allRows.filter(function (row) {
       if (stateVal) { if (row.state !== stateVal) { return false; } }
       if (cityVal) { if (row.city !== cityVal) { return false; } }
-      if (instrVal) { if (row.instrumentation !== instrVal) { return false; } }
+      if (instrVal) { if (instrumentParts(row.instrumentation).indexOf(instrVal) === -1) { return false; } }
       if (!showUnavailable) { if (row.position === PLACEHOLDER_POSITION) { return false; } }
       return true;
     });

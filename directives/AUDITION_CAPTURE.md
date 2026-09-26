@@ -324,9 +324,11 @@ The `instrumentation` field should contain the **instrument family or specific i
 | `Percussion` | Any percussion |
 | `Timpani` | Timpani (often listed separately from Percussion) |
 | `Harp` | Harp |
-| `Keyboard` | Piano / Keyboard |
-| `Piano & Celeste` | Do NOT collapse to `Keyboard` — this is a distinct, specifically named doubling designation and must be preserved verbatim when the source uses it. |
-| `Conductor` | Conducting positions |
+| `Keyboard` | Positions the source calls "Keyboard" (a general keyboard chair) |
+| `Piano` | Positions the source calls "Piano" |
+| `Celeste` | Positions the source calls "Celeste" |
+| `Organ` | Positions the source calls "Organ" |
+| `Piano & Celeste` (and similar doublings) | Do NOT collapse to `Keyboard` — preserve a named doubling verbatim when the source uses it. The Audition Board search splits it on " & " so the listing appears under each named instrument (Piano AND Celeste). Keyboard-family values are kept specific on purpose (project owner, 2026-09-26): "our searches need to be specific." Keyboard, Piano, Celeste and Organ always appear in the search dropdown even with no current listings. |
 | `Multiple` | **Deprecated — do not use this value at all.** If the source names specific instruments (even several at once, e.g. "Violin, Viola, and Cello openings," or "Flute, Oboe, Clarinet" for a sub list), create one separate audition record per named instrument instead (same position/rank, different instrumentation each) — this applies even when several instruments share one combined audition event (e.g. one sub-list audition day covering six different instruments still becomes six separate records, one per instrument). If the source genuinely names NO instrument at all (a true blanket "accepting substitutes for all positions" with zero instruments specified), that is an AMBIGUOUS case per Step 3 — do NOT insert it; flag it instead rather than guessing or using a placeholder instrumentation value. |
 | `N/A` | Placeholder records only |
 
