@@ -6,6 +6,15 @@ LOG="logs/detector-$(date -u +%F).log"
 exec 9>/tmp/ac-detector.lock
 flock -n 9 || { echo "$(date -u) already running, skipping" >> "$LOG"; exit 0; }
 docker rm -f ac-detector >/dev/null 2>&1
+# Hostinger's /etc/cron.d/docker-image-prune deletes unused images >24h old,
+# which wiped this image on 2026-09-26. The stopped ac-crawler-keep container
+# pins it; rebuild here as a backstop if it's missing anyway.
+if ! docker image inspect ac-crawler >/dev/null 2>&1; then
+  echo "$(date -u) ac-crawler image missing -- rebuilding" >> "$LOG"
+  docker build -q -t ac-crawler /opt/audition-collective >> "$LOG" 2>&1
+  docker rm -f ac-crawler-keep >/dev/null 2>&1
+  docker create --name ac-crawler-keep ac-crawler true >/dev/null 2>&1
+fi
 # Whole-run backstop: a normal full run is ~11 min; kill anything past 60.
 timeout 60m docker run --rm --name ac-detector --shm-size=1g --memory=4g \
   --env-file /opt/audition-collective/.env \

@@ -361,6 +361,40 @@ async def process(crawler, cfg, o, sem, tally):
             print(f"  [{result}] [{o['id']}] {o['name']}", flush=True)
 
 
+STALE_UNDATED_DAYS = 60
+
+
+def queue_stale_undated(cur):
+    """Listings with no final audition date can never expire via the nightly
+    purge, so re-queue any not verified in STALE_UNDATED_DAYS for a manual
+    check. (Alabama Symphony's undated Principal Trumpet lingered after its
+    audition had passed, 2026-09-26.)"""
+    cur.execute(
+        """SELECT DISTINCT a.orchestra_id FROM auditions a
+           WHERE a.final_audition IS NULL
+             AND a.position <> 'No auditions reported at this time'
+             AND (a.last_verified_at IS NULL OR a.last_verified_at < NOW() - INTERVAL %s DAY)""",
+        (STALE_UNDATED_DAYS,),
+    )
+    queued = 0
+    for (oid,) in cur.fetchall():
+        if add_manual_flag(cur, oid, "stale_undated",
+                           f"Undated listing(s) not verified in {STALE_UNDATED_DAYS}+ days; confirm still open"):
+            queued += 1
+    # A preliminary date with no final is always a capture error (a single
+    # audition date belongs in final_audition) -- Waterloo-Cedar Falls,
+    # 2026-09-26. Queue immediately rather than waiting 60 days.
+    cur.execute(
+        """SELECT DISTINCT orchestra_id FROM auditions
+           WHERE preliminary_audition IS NOT NULL AND final_audition IS NULL"""
+    )
+    for (oid,) in cur.fetchall():
+        if add_manual_flag(cur, oid, "prelim_no_final",
+                           "Listing has a preliminary date but no final audition date; likely a single audition date stored in the wrong column"):
+            queued += 1
+    return queued
+
+
 def load_orchestras(limit=None, ids=None):
     conn = db()
     cur = conn.cursor(dictionary=True)
@@ -399,6 +433,10 @@ async def main():
     sem = asyncio.Semaphore(CONCURRENCY)
     async with AsyncWebCrawler(config=BrowserConfig(headless=True, enable_stealth=True, verbose=False)) as crawler:
         await asyncio.gather(*(process(crawler, cfg, o, sem, tally) for o in orchestras))
+
+    if not ids and not limit:
+        stale = write({"id": 0, "name": "stale-undated sweep"}, queue_stale_undated)
+        tally["stale_undated"] = stale or 0
 
     mins = (datetime.now() - started).total_seconds() / 60
     print(f"Done in {mins:.1f} min. " + ", ".join(f"{k}={v}" for k, v in tally.items()), flush=True)
