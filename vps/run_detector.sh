@@ -22,6 +22,14 @@ timeout 60m docker run --rm --name ac-detector --shm-size=1g --memory=4g \
   ac-crawler python /app/detect.py "$@" >> "$LOG" 2>&1
 rc=$?
 docker rm -f ac-detector >/dev/null 2>&1
+# Data-integrity pass: flags listings whose dates/fields look like capture
+# errors (prelim without final, missing deadline near the audition, dates out
+# of order, orchestras with no rows, ...) into the manual-check queue.
+echo "--- integrity check ---" >> "$LOG"
+timeout 10m docker run --rm --name ac-integrity \
+  --env-file /opt/audition-collective/.env \
+  -v /opt/audition-collective/check_data_integrity.py:/app/integrity.py:ro \
+  ac-crawler python /app/integrity.py >> "$LOG" 2>&1
 [ $rc -eq 124 ] && echo "$(date -u) KILLED: run exceeded 60 min backstop" >> "$LOG"
 echo "exit $rc" >> "$LOG"
 find logs -name 'detector-*.log' -mtime +30 -delete

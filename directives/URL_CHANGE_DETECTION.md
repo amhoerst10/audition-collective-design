@@ -169,6 +169,34 @@ eliminate text-diff noise at the root. Deliberately not adopted yet: the
 clean markdown alone already reproduced every hand-verified fact, and it adds
 a per-page API cost. Revisit only if the text-diff approach proves inaccurate.
 
+## Nightly data-integrity check (added 2026-09-26)
+
+`execution/check_data_integrity.py` runs right after the Crawl4AI detector in
+`run_detector.sh`. It doesn't look at websites; it scans every `auditions`
+row for patterns that usually mean a capture error, and queues each affected
+orchestra (`status='needs_manual_check'`, `failure_reason='data_integrity'`,
+`detector='integrity'`, issues listed in `diff_summary`, 7-day dedupe).
+
+**Why it exists:** the project owner kept spotting these by eye on the live
+board ("how can you have a Section Second Violin position without an
+application deadline, but it has a prelim and a final?"). The owner's
+standard: the system, not a human skimming the board, should catch these.
+
+| Check | Rationale |
+|---|---|
+| Preliminary date but no final | A single audition date stored in the wrong column (Waterloo-Cedar Falls) |
+| Final within 120 days but no deadline | Deadlines are normally posted by then. NOT flagged further out -- Atlanta's 2027 auditions legitimately say "Not yet accepting applications" |
+| Deadline after prelim/final, or prelim after final | Typo or swapped columns |
+| Final more than 18 months out | Likely year typo |
+| No final and no reason suffix | Breaks the capture rule; never expires |
+| Final passed more than a day ago, row still present | Purge missed it (the WP-Cron purge fires ~15:45 UTC, hence the one-day grace) |
+| Duplicate listings / duplicate placeholders / placeholder beside real rows | Leftover or double entry |
+| Orchestra with no rows at all | Invisible on the board. The first run found 13 (Indianapolis, Louisville, San Diego, Utah Symphony, SF Opera, ...), a gap predating this system |
+| Instrumentation not allowed, or contradicting the position name | Misfiled instrument |
+
+A hit means "look at this," not "this is wrong." Work each through the same
+research -> independent verification -> write process as other queue items.
+
 ## Legacy tool: BeautifulSoup detector (running in parallel until cutover)
 `execution/detect_url_changes.py`
 - Fetches each orchestra's `url` (same polite GET + User-Agent header pattern
