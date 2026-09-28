@@ -145,3 +145,77 @@ footer p:not(:contains("©")) {
 
 
 
+/* ===== Mobile (<600px): visible navigation instead of a hamburger (2026-09-28) =====
+   With only 3-4 pages, a hidden menu was not recognizable as navigation on phones. */
+@media (max-width: 599px) {
+  header .wp-block-navigation__responsive-container-open { display: none !important; }
+  header .wp-block-navigation__responsive-container:not(.is-menu-open) {
+    display: block !important; position: static !important; inset: auto !important;
+    background: transparent !important; padding: 0 !important; width: 100% !important;
+    height: auto !important; overflow: visible !important; z-index: auto !important;
+  }
+  header .wp-block-navigation__responsive-container-close { display: none !important; }
+  header .wp-block-navigation__responsive-close,
+  header .wp-block-navigation__responsive-dialog,
+  header .wp-block-navigation__responsive-container-content {
+    display: block !important; padding: 0 !important; margin: 0 !important; width: 100% !important;
+  }
+  header .wp-block-group { flex-wrap: wrap !important; row-gap: 14px !important; }
+  header nav.wp-block-navigation { width: 100% !important; flex-basis: 100% !important; }
+  /* Trim the ~100px empty band between header and first section on phones. */
+  main { margin-top: 10px !important; }
+  main > .wp-block-group.alignfull:first-child { padding-top: 0 !important; }
+  header .wp-block-navigation__container {
+    display: flex !important; flex-direction: row !important; flex-wrap: wrap !important;
+    justify-content: flex-start !important; align-items: center !important; gap: 5px !important;
+  }
+  header .wp-block-navigation__container > .wp-block-navigation-item {
+    border: 1px solid rgba(212, 175, 55, 0.45); border-radius: 999px;
+  }
+  header .wp-block-navigation__container .wp-block-navigation-item__content {
+    display: inline-flex !important; align-items: center; min-height: 44px;
+    padding: 0 10px !important; font-size: 14px !important;
+  }
+}
+
+/* ===== Mobile (<700px): Audition Board listings as cards, not a wide table =====
+   The 8-column table was 1,226px wide in a 275px box; phones only saw Orchestra and City. */
+@media (max-width: 700px) {
+  .ac-table-scroll { overflow: visible !important; }
+  #ac-board-table, #ac-board-table tbody { display: block !important; width: 100% !important; min-width: 0 !important; }
+  #ac-board-table thead { display: none !important; }
+  #ac-board-table tr {
+    display: grid !important; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 14px;
+    padding: 16px 16px 18px; margin: 0 0 14px; background: #0e0e0e;
+    border: 1px solid rgba(212, 175, 55, 0.28); border-radius: 12px;
+  }
+  #ac-board-table td {
+    display: block !important; padding: 0 !important; border: 0 !important; min-width: 0 !important;
+    width: auto !important; white-space: normal !important; font-size: 0.95rem; line-height: 1.35;
+    overflow-wrap: break-word; background: transparent !important;
+  }
+  #ac-board-table td::before {
+    display: block; font-size: 0.68rem; font-weight: 600; letter-spacing: 0.08em;
+    text-transform: uppercase; color: rgba(212, 175, 55, 0.78); margin-bottom: 3px;
+  }
+  #ac-board-table td:nth-child(1) { grid-column: 1 / -1; font-size: 1.08rem; font-weight: 700; }
+  #ac-board-table td:nth-child(1)::before { content: none; }
+  #ac-board-table td:nth-child(2) { grid-column: span 2; }
+  #ac-board-table td:nth-child(2)::before { content: "City"; }
+  #ac-board-table td:nth-child(3)::before { content: "State"; }
+  #ac-board-table td:nth-child(4) { grid-column: 1 / -1; font-weight: 600; font-size: 1rem; }
+  #ac-board-table td:nth-child(4)::before { content: "Position"; }
+  #ac-board-table td:nth-child(5) { grid-column: 1 / -1; }
+  #ac-board-table td:nth-child(5)::before { content: "Instrument"; }
+  #ac-board-table td:nth-child(6)::before { content: "Deadline"; }
+  #ac-board-table td:nth-child(7)::before { content: "Prelim"; }
+  #ac-board-table td:nth-child(8)::before { content: "Final"; }
+  #ac-board-table td:nth-child(6), #ac-board-table td:nth-child(7), #ac-board-table td:nth-child(8) {
+    white-space: nowrap !important; font-size: 0.9rem; font-variant-numeric: tabular-nums;
+  }
+}
+
+/* ===== Mobile (<600px): Contact page email button overflowed the screen (394px on 375px) ===== */
+@media (max-width: 599px) {
+  a[href^="mailto:"] { max-width: 100%; box-sizing: border-box; font-size: 1.05rem !important; padding: 12px 18px !important; overflow-wrap: anywhere; }
+}
