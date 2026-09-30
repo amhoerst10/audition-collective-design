@@ -226,6 +226,24 @@ scope rules still apply at review. First run queued 6 (Colorado Symphony
 2nd Trumpet, New Haven violins, Met Opera Principal Cello, Johnstown viola,
 Nashville Civic principal bass, Alabama's stale posts).
 
+**Second source: orchestraplan.com (added 2026-09-30).** Also read nightly:
+16 per-instrument pages (`/<instrument>-orchestra-auditions`, e.g. `violin`,
+`double-bass`, `horn`). They are server-rendered, so plain HTTP with a
+browser User-Agent works (no Crawl4AI browser), with a 2-5 s pause per page and
+3 retries. `bass`, `organ`, `timpani` and `keyboard` slugs don't exist; percussion
+covers timpani. Pages mix current and expired vacancies, so a card counts only
+if its audition date is today or later, or it has no date but still shows
+"N days to apply". "Orchestra Program" cards (courses) and positions marked
+volunteer/unpaid are skipped. Org names carry parentheticals ("(TSO)",
+"Symphony in C Orchestra (Haddonfield Symphony)"), and `norm()` strips them
+before matching. Why: on 2026-09-30 it confirmed Abilene's Oct 23 auditions
+while abiphil.com rendered blank and Toledo's concertmaster dates while
+artstoledo.com redirected. Its first dry run found leads musicalchairs lacked
+(LA Phil section violin/bass/English horn, Hawai'i trumpet and horn, Rockford,
+Cape Symphony, Houston Grand Opera percussion). dbStrings.com was considered
+but is strings-only and unreliable to fetch (timed out for the QA agent), so
+it is not used.
+
 **Polite crawling (same date):** the main detector now runs 2 pages at a
 time (was 4), pauses a random 2-6 s per site, and shuffles its order each
 night; a full run takes ~30 min (run backstop raised to 90 min). After a
