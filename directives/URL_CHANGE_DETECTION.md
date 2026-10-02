@@ -226,6 +226,20 @@ scope rules still apply at review. First run queued 6 (Colorado Symphony
 2nd Trumpet, New Haven violins, Met Opera Principal Cello, Johnstown viola,
 Nashville Civic principal bass, Alabama's stale posts).
 
+**Same-day alerts (added 2026-10-01).** `execution/mark_hot_flags.py` runs
+last in the nightly VPS job. It tags unreviewed c4a flags from the past 36 h
+with `failure_reason='likely_new_audition'` when an added diff line has an
+instrument or position word, and a date, deadline or "audition" appears on that line or within the next 3
+added lines. Concert and ticket lines are excluded. A desktop scheduled task,
+"Audition Collective – same-day new audition alert", runs at 8:06 AM Central
+and reviews those flags plus job-board mismatches: browser check, independent
+QA, write, alert summary. Why: the BSO's Third Horn and Section Viola postings
+(2026-09-30) were flagged overnight but sat among ~200 noise flags until the
+owner spotted them. On the past week's flags the screen hit BSO and Annapolis
+(both real) and one concert false positive (Fairfax). It misses rewordings
+without dates (Rockford "Section Cello (two positions)"), which the
+orchestraplan check caught instead.
+
 **Second source: orchestraplan.com (added 2026-09-30).** Also read nightly:
 16 per-instrument pages (`/<instrument>-orchestra-auditions`, e.g. `violin`,
 `double-bass`, `horn`). They are server-rendered, so plain HTTP with a

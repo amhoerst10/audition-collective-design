@@ -37,6 +37,13 @@ timeout 20m docker run --rm --name ac-jobboard --shm-size=1g \
   --env-file /opt/audition-collective/.env \
   -v /opt/audition-collective/check_job_boards.py:/app/jobboards.py:ro \
   ac-crawler python /app/jobboards.py >> "$LOG" 2>&1
+# Same-day alert triage: tag change flags that look like a new audition
+# posting (failure_reason='likely_new_audition') for the morning review task.
+echo "--- hot-flag triage ---" >> "$LOG"
+timeout 5m docker run --rm --name ac-hotflags \
+  --env-file /opt/audition-collective/.env \
+  -v /opt/audition-collective/mark_hot_flags.py:/app/hot.py:ro \
+  ac-crawler python /app/hot.py >> "$LOG" 2>&1
 [ $rc -eq 124 ] && echo "$(date -u) KILLED: run exceeded 90 min backstop" >> "$LOG"
 echo "exit $rc" >> "$LOG"
 find logs -name 'detector-*.log' -mtime +30 -delete
