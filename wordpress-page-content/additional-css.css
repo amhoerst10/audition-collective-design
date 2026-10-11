@@ -219,3 +219,8 @@ footer p:not(:contains("©")) {
 @media (max-width: 599px) {
   a[href^="mailto:"] { max-width: 100%; box-sizing: border-box; font-size: 1.05rem !important; padding: 12px 18px !important; overflow-wrap: anywhere; }
 }
+
+/* ===== About page: hide the template's automatic page title (2026-10-11) =====
+   The page content already opens with "About AuditionCollective", so the
+   "About" title above it was a duplicate heading. */
+.page-id-155 .wp-block-post-title { display: none; }
